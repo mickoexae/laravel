@@ -46,6 +46,16 @@
             </button>
         </form>
 
+        <!-- Link ke Halaman Registrasi -->
+        <div class="text-center mt-4">
+            <p class="text-sm text-gray-600">
+                Belum punya akun?
+                <a href="{{ route('register') }}" class="text-indigo-600 font-semibold hover:text-indigo-800 transition duration-200">
+                    Daftar di sini
+                </a>
+            </p>
+        </div>
+
         <!-- Footer -->
         <p class="text-center text-sm text-gray-500 mt-6">
             © {{ date('Y') }} Task Manager. All rights reserved.
