@@ -12,7 +12,23 @@
             <label class="block text-gray-700 font-medium mb-2">Judul Task</label>
             <input type="text" name="title" 
                 class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                placeholder="Masukkan judul task" required>
+                placeholder="Masukkan judul task" required
+                value="{{ old('title') }}">
+            @error('title')
+                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+            @enderror
+        </div>
+
+        <!-- Deskripsi Task -->
+        <div>
+            <label class="block text-gray-700 font-medium mb-2">Deskripsi Task (Opsional)</label>
+            <textarea name="description" 
+                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                placeholder="Masukkan deskripsi task (opsional)" 
+                rows="4">{{ old('description') }}</textarea>
+            @error('description')
+                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+            @enderror
         </div>
 
         <!-- Status -->
@@ -20,10 +36,13 @@
             <label class="block text-gray-700 font-medium mb-2">Status</label>
             <select name="status" 
                 class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" required>
-                <option value="pending">Pending</option>
-                <option value="in_progress">In Progress</option>
-                <option value="done">Done</option>
+                <option value="pending" {{ old('status') == 'pending' ? 'selected' : '' }}>Pending</option>
+                <option value="in_progress" {{ old('status') == 'in_progress' ? 'selected' : '' }}>In Progress</option>
+                <option value="done" {{ old('status') == 'done' ? 'selected' : '' }}>Done</option>
             </select>
+            @error('status')
+                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+            @enderror
         </div>
 
         <!-- Pilih Project -->
@@ -32,9 +51,14 @@
             <select name="project_id" 
                 class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none" required>
                 @foreach($projects as $project)
-                    <option value="{{ $project->id }}">{{ $project->name }}</option>
+                    <option value="{{ $project->id }}" {{ old('project_id') == $project->id ? 'selected' : '' }}>
+                        {{ $project->name }}
+                    </option>
                 @endforeach
             </select>
+            @error('project_id')
+                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+            @enderror
         </div>
 
         <!-- Tombol -->

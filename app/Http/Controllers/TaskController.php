@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Task;
 use App\Models\Project;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class TaskController extends Controller
 {
@@ -13,7 +14,19 @@ class TaskController extends Controller
      */
     public function index()
     {
-        $tasks = Task::with('project')->latest()->get();
+        $query = Task::with(['project', 'user'])->latest();
+        
+        if (auth()->user()->role !== 'admin') {
+            $adminIds = \App\Models\User::where('role', 'admin')->pluck('id');
+            
+            $query->where(function($q) use ($adminIds) {
+                $q->whereIn('user_id', $adminIds)
+                  ->orWhere('user_id', auth()->id());
+            });
+        }
+        
+        $tasks = $query->paginate(10);
+        
         return view('tasks.index', compact('tasks'));
     }
 
@@ -31,21 +44,40 @@ class TaskController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'title'       => 'required|string|max:255',
-            'description' => 'nullable|string',
+            'description' => 'nullable|string', // Bisa null
             'status'      => 'required|in:pending,in_progress,done',
             'project_id'  => 'required|exists:projects,id',
         ]);
 
+        // PERBAIKAN: Gunakan null coalescing untuk handle jika description tidak ada
         Task::create([
-            'title'       => $request->title,
-            'description' => $request->description,
-            'status'      => $request->status,
-            'project_id'  => $request->project_id,
+            'title'       => $validated['title'],
+            'description' => $validated['description'] ?? null, // Ini perbaikan utama
+            'status'      => $validated['status'],
+            'project_id'  => $validated['project_id'],
+            'user_id'     => auth()->id(),
         ]);
 
-        return redirect()->route('tasks.index')->with('success', 'Task berhasil ditambahkan');
+        return redirect()->route('tasks.index')
+            ->with('success', 'Task berhasil ditambahkan');
+    }
+
+    /**
+     * Check authorization for task access (helper method)
+     */
+    private function authorizeTaskAccess(Task $task)
+    {
+        if (auth()->user()->role !== 'admin') {
+            if (!$task->relationLoaded('user')) {
+                $task->load('user');
+            }
+            
+            if ($task->user->role !== 'admin' && $task->user_id !== auth()->id()) {
+                abort(403, 'Unauthorized action.');
+            }
+        }
     }
 
     /**
@@ -53,6 +85,10 @@ class TaskController extends Controller
      */
     public function show(Task $task)
     {
+        $this->authorizeTaskAccess($task);
+        
+        $task->load(['project', 'user']);
+        
         return view('tasks.show', compact('task'));
     }
 
@@ -61,6 +97,10 @@ class TaskController extends Controller
      */
     public function edit(Task $task)
     {
+        $this->authorizeTaskAccess($task);
+        
+        $task->load(['project', 'user']);
+        
         $projects = Project::all();
         return view('tasks.edit', compact('task', 'projects'));
     }
@@ -70,21 +110,25 @@ class TaskController extends Controller
      */
     public function update(Request $request, Task $task)
     {
-        $request->validate([
+        $this->authorizeTaskAccess($task);
+
+        $validated = $request->validate([
             'title'       => 'required|string|max:255',
             'description' => 'nullable|string',
             'status'      => 'required|in:pending,in_progress,done',
             'project_id'  => 'required|exists:projects,id',
         ]);
 
+        // PERBAIKAN: Gunakan null coalescing untuk update juga
         $task->update([
-            'title'       => $request->title,
-            'description' => $request->description,
-            'status'      => $request->status,
-            'project_id'  => $request->project_id,
+            'title'       => $validated['title'],
+            'description' => $validated['description'] ?? null,
+            'status'      => $validated['status'],
+            'project_id'  => $validated['project_id'],
         ]);
 
-        return redirect()->route('tasks.index')->with('success', 'Task berhasil diperbarui');
+        return redirect()->route('tasks.index')
+            ->with('success', 'Task berhasil diperbarui');
     }
 
     /**
@@ -92,8 +136,11 @@ class TaskController extends Controller
      */
     public function destroy(Task $task)
     {
+        $this->authorizeTaskAccess($task);
+        
         $task->delete();
-
-        return redirect()->route('tasks.index')->with('success', 'Task berhasil dihapus');
+        
+        return redirect()->route('tasks.index')
+            ->with('success', 'Task berhasil dihapus');
     }
 }

@@ -10,17 +10,11 @@ use Illuminate\Validation\Rules;
 
 class RegisteredUserController extends Controller
 {
-    /**
-     * Menampilkan form registrasi
-     */
     public function create()
     {
         return view('auth.register');
     }
 
-    /**
-     * Menyimpan user baru
-     */
     public function store(Request $request)
     {
         $request->validate([
@@ -33,12 +27,13 @@ class RegisteredUserController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role' => 'user', // Default role sesuai dengan struktur database
+            'role' => 'user',
         ]);
 
-        // Auto login setelah registrasi
-        auth()->login($user);
+        // PASTIKAN baris auth()->login($user) DIHAPUS atau DIKOMENTARI
+        // auth()->login($user); // <- INI HARUS DIHAPUS ATAU DIKOMENTARI
 
-        return redirect('/tasks'); // Ganti dengan halaman setelah registrasi
+        return redirect()->route('login')
+            ->with('success', 'Registrasi berhasil! Silakan login dengan akun Anda.');
     }
 }
